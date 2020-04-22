@@ -1,10 +1,14 @@
 package main
 
 import (
+	DB "QGTodo/db"
 	"database/sql"
 	"fmt"
 	"github.com/joho/godotenv"
+	"github.com/julienschmidt/httprouter"
+	_ "github.com/lib/pq"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 )
@@ -24,7 +28,7 @@ func portAtoi(port string) int {
 	}
 	return i
 }
-func sprintfDBConfig(config DBConfig) string{
+func sprintfDBConfig(config DBConfig) string {
 	return fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
 		config.host, config.port, config.user, config.password, config.database)
@@ -35,8 +39,8 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	dbConfig := DBConfig{
-		host: 	os.Getenv("QGTODO_HOST"),
-		port:	portAtoi(os.Getenv("QGTODO_PORT")),
+		host:     os.Getenv("QGTODO_HOST"),
+		port:     portAtoi(os.Getenv("QGTODO_PORT")),
 		user:     os.Getenv("QGTODO_USER"),
 		password: os.Getenv("QGTODO_PW"),
 		database: os.Getenv("QGTODO_DB"),
@@ -44,9 +48,17 @@ func main() {
 	fmt.Println("Launching server...")
 
 	db, err := sql.Open("postgres", sprintfDBConfig(dbConfig))
+	queries := DB.New(db)
+	//queries = Queries{*queries}
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
+	router := httprouter.New()
+	router.POST("/signin", Signin(queries))
+	router.POST("/signup", Signup)
+	router.GET("/welcome", Welcome)
+	router.GET("/refresh", Refresh)
 
+	log.Fatal(http.ListenAndServe(":8000", router))
 }

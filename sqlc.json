@@ -3,7 +3,7 @@
   "packages": [{
     "schema": "./sql/schema/",
     "queries": "./sql/query/",
-    "name": "main",
+    "name": "DB",
     "path": "./db"
   }]
 }

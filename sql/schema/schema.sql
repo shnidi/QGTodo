@@ -1,5 +1,6 @@
 CREATE TABLE users
 (
     id   SERIAL PRIMARY KEY,
-    pkey BYTEA NOT NULL
+    username varchar(255),
+    password varchar(255)
 );
