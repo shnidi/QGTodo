@@ -9,23 +9,29 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-  username
-) VALUES (
-  $1
-)
+INSERT INTO users (username,
+                   password)
+VALUES ($1,
+        $2
+        )
 RETURNING id, username, password
 `
 
-func (q *Queries) CreateUser(ctx context.Context, username sql.NullString) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, username)
+type CreateUserParams struct {
+	Username sql.NullString
+	Password []byte
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Password)
 	var i User
 	err := row.Scan(&i.ID, &i.Username, &i.Password)
 	return i, err
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users
+DELETE
+FROM users
 WHERE id = $1
 `
 
@@ -35,8 +41,10 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, password FROM users
-WHERE id = $1 LIMIT 1
+SELECT id, username, password
+FROM users
+WHERE id = $1
+LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
@@ -47,8 +55,10 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 }
 
 const getUserByName = `-- name: GetUserByName :one
-SELECT id, username, password FROM users
-WHERE username = $1 LIMIT 1
+SELECT id, username, password
+FROM users
+WHERE username = $1
+LIMIT 1
 `
 
 func (q *Queries) GetUserByName(ctx context.Context, username sql.NullString) (User, error) {
@@ -59,7 +69,8 @@ func (q *Queries) GetUserByName(ctx context.Context, username sql.NullString) (U
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT username FROM users
+SELECT username
+FROM users
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]sql.NullString, error) {

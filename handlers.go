@@ -2,12 +2,13 @@ package main
 
 import (
 	"QGTodo/db"
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
-	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/argon2"
 	"net/http"
 	"time"
 )
@@ -30,50 +31,64 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
+func HashPassword(password string) []byte {
+	bytes := argon2.Key(
+		[]byte(password),
+		[]byte("secret"),
+		3, 32*1024, 4, 32)
+	return bytes
 }
 
-func CheckPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+func CheckPasswordHash(password string, hash []byte) bool {
+	return bytes.Equal(
+		hash,
+		HashPassword(password),
+	)
 }
-func Signup(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	var creds Credentials
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+
+func Signup(queries *DB.Queries) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		var creds Credentials
+		err := json.NewDecoder(r.Body).Decode(&creds)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		_, err = queries.CreateUser(
+			r.Context(),
+			DB.CreateUserParams{
+				Username: sql.NullString{String: creds.Username, Valid: true},
+				Password: HashPassword(creds.Password),
+			})
+		if err != nil {
+			print(err.Error())
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		expirationTime := time.Now().Add(5 * time.Minute)
+
+		claims := &Claims{
+			Username: creds.Username,
+			StandardClaims: jwt.StandardClaims{
+				ExpiresAt: expirationTime.Unix(),
+			},
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+		tokenString, err := token.SignedString(jwtKey)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:    "token",
+			Value:   tokenString,
+			Expires: expirationTime,
+		})
 	}
-
-	/*expectedPassword, ok := users[creds.Username]
-
-	if !ok || expectedPassword != creds.Password {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}*/
-	expirationTime := time.Now().Add(5 * time.Minute)
-
-	claims := &Claims{
-		Username: creds.Username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
-	})
 }
 func Signin(queries *DB.Queries) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -96,9 +111,7 @@ func Signin(queries *DB.Queries) httprouter.Handle {
 
 		}
 
-		expectedPassword, ok := user.Password.String, user.Password.Valid
-
-		if !ok || expectedPassword != creds.Password {
+		if !CheckPasswordHash(creds.Password, user.Password) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}

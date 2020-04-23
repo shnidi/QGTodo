@@ -54,9 +54,10 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+
 	router := httprouter.New()
 	router.POST("/signin", Signin(queries))
-	router.POST("/signup", Signup)
+	router.POST("/signup", Signup(queries))
 	router.GET("/welcome", Welcome)
 	router.GET("/refresh", Refresh)
 
