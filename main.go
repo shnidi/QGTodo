@@ -60,6 +60,8 @@ func main() {
 	router.POST("/signup", Signup(queries))
 	router.GET("/welcome", Welcome)
 	router.GET("/refresh", Refresh)
-
+	/*	router.POST("/task", CreateTask)
+		router.GET("/task", GetTasks)
+		router.GET("/task/:task", GetTask)*/
 	log.Fatal(http.ListenAndServe(":8000", router))
 }

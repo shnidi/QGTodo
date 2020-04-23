@@ -9,34 +9,29 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/crypto/argon2"
+	"log"
 	"net/http"
 	"time"
 )
 
-var jwtKey = []byte("hansadam")
-
-var users = map[string]string{
-	"user1": "password1",
-	"user2": "password2",
-}
+var jwtKey = []byte("totaly-secret-jwt-key")
 
 type Credentials struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
 }
 
-//
 type Claims struct {
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
 
 func HashPassword(password string) []byte {
-	bytes := argon2.Key(
+	bKey := argon2.Key(
 		[]byte(password),
 		[]byte("secret"),
 		3, 32*1024, 4, 32)
-	return bytes
+	return bKey
 }
 
 func CheckPasswordHash(password string, hash []byte) bool {
@@ -44,6 +39,42 @@ func CheckPasswordHash(password string, hash []byte) bool {
 		hash,
 		HashPassword(password),
 	)
+}
+
+func CheckClaims(w http.ResponseWriter, r *http.Request) (claims Claims, err error) {
+
+	c, err := r.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	tknStr := c.Value
+
+	tkn, err := jwt.ParseWithClaims(tknStr, &claims, func(token *jwt.Token) (interface{}, error) {
+		return jwtKey, nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if !tkn.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	return
 }
 
 func Signup(queries *DB.Queries) httprouter.Handle {
@@ -90,6 +121,7 @@ func Signup(queries *DB.Queries) httprouter.Handle {
 		})
 	}
 }
+
 func Signin(queries *DB.Queries) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		var creds Credentials
@@ -140,70 +172,16 @@ func Signin(queries *DB.Queries) httprouter.Handle {
 }
 
 func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	c, err := r.Cookie("token")
+	claims, err := CheckClaims(w, r)
 	if err != nil {
-		if err == http.ErrNoCookie {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	tknStr := c.Value
-
-	claims := &Claims{}
-
-	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if !tkn.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
+		log.Print(err.Error())
 		return
 	}
 	w.Write([]byte(fmt.Sprintf("Welcome %s!", claims.Username)))
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	c, err := r.Cookie("token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	tknStr := c.Value
-	claims := &Claims{}
-	tkn, err := jwt.ParseWithClaims(tknStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-	if !tkn.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	claims, err := CheckClaims(w, r)
 
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims.ExpiresAt = expirationTime.Unix()
