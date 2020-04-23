@@ -1,7 +1,7 @@
-package main
+package handler
 
 import (
-	"QGTodo/db"
+	"QGTodo/pkg/db"
 	"bytes"
 	"database/sql"
 	"encoding/json"

@@ -1,7 +1,8 @@
 package main
 
 import (
-	DB "QGTodo/db"
+	DB "QGTodo/pkg/db"
+	. "QGTodo/pkg/handler"
 	"database/sql"
 	"fmt"
 	"github.com/joho/godotenv"

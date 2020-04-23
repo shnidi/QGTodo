@@ -4,6 +4,6 @@
     "schema": "./sql/schema/",
     "queries": "./sql/query/",
     "name": "DB",
-    "path": "./db"
+    "path": "./pkg/db"
   }]
 }
