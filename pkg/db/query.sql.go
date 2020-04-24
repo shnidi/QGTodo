@@ -14,7 +14,7 @@ INSERT INTO users (username,
 VALUES ($1,
         $2
         )
-RETURNING id, username, password
+RETURNING id, username, password, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -25,7 +25,14 @@ type CreateUserParams struct {
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Password)
 	var i User
-	err := row.Scan(&i.ID, &i.Username, &i.Password)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Password,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
 	return i, err
 }
 
@@ -41,7 +48,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id int32) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, username, password
+SELECT id, username, password, created_at, updated_at, deleted_at
 FROM users
 WHERE id = $1
 LIMIT 1
@@ -50,12 +57,19 @@ LIMIT 1
 func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
 	var i User
-	err := row.Scan(&i.ID, &i.Username, &i.Password)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Password,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
 	return i, err
 }
 
 const getUserByName = `-- name: GetUserByName :one
-SELECT id, username, password
+SELECT id, username, password, created_at, updated_at, deleted_at
 FROM users
 WHERE username = $1
 LIMIT 1
@@ -64,7 +78,14 @@ LIMIT 1
 func (q *Queries) GetUserByName(ctx context.Context, username sql.NullString) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByName, username)
 	var i User
-	err := row.Scan(&i.ID, &i.Username, &i.Password)
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Password,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
 	return i, err
 }
 
