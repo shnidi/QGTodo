@@ -6,14 +6,6 @@ import (
 	"database/sql"
 )
 
-type Group struct {
-	ID        int32
-	Title     sql.NullString
-	CreatedAt sql.NullTime
-	UpdatedAt sql.NullTime
-	DeletedAt sql.NullTime
-}
-
 type Task struct {
 	ID        int32
 	Title     sql.NullString
@@ -31,10 +23,4 @@ type User struct {
 	CreatedAt sql.NullTime
 	UpdatedAt sql.NullTime
 	DeletedAt sql.NullTime
-}
-
-type Usergroup struct {
-	ID      int32
-	FkUser  sql.NullInt32
-	FkGroup sql.NullInt32
 }

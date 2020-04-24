@@ -8,7 +8,7 @@ CREATE TABLE users
     deleted_at timestamp
 );
 
-CREATE TABLE task
+CREATE TABLE tasks
 (
     id   SERIAL PRIMARY KEY,
     title varchar(255),
@@ -18,7 +18,7 @@ CREATE TABLE task
     updated_at timestamp,
     deleted_at timestamp
 );
-
+/*
 CREATE TABLE groups(
     id SERIAL PRIMARY KEY,
     title varchar(255),
@@ -27,8 +27,8 @@ CREATE TABLE groups(
     deleted_at timestamp
 );
 
-CREATE TABLE usergroup(
+CREATE TABLE user_group(
         id SERIAL PRIMARY KEY,
         fk_user  SERIAL REFERENCES users(id) ON DELETE RESTRICT,
         fk_group  SERIAL REFERENCES groups(id) ON DELETE RESTRICT
-);
+);*/

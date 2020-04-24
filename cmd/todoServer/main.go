@@ -2,7 +2,7 @@ package main
 
 import (
 	DB "QGTodo/pkg/db"
-	. "QGTodo/pkg/handler"
+	"QGTodo/pkg/handler"
 	"database/sql"
 	"fmt"
 	"github.com/joho/godotenv"
@@ -57,10 +57,10 @@ func main() {
 	defer db.Close()
 
 	router := httprouter.New()
-	router.POST("/signin", Signin(queries))
-	router.POST("/signup", Signup(queries))
-	router.GET("/welcome", Welcome)
-	router.GET("/refresh", Refresh)
+	router.POST("/signin", handler.Signin(queries))
+	router.POST("/signup", handler.Signup(queries))
+	router.GET("/welcome", handler.Welcome)
+	router.GET("/refresh", handler.Refresh)
 	/*	router.POST("/task", CreateTask)
 		router.GET("/task", GetTasks)
 		router.GET("/task/:task", GetTask)*/

@@ -2,79 +2,21 @@ package handler
 
 import (
 	"QGTodo/pkg/db"
-	"bytes"
+	"QGTodo/pkg/util/auth"
+	"QGTodo/pkg/util/jwtauth"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
-	"golang.org/x/crypto/argon2"
 	"log"
 	"net/http"
 	"time"
 )
 
-var jwtKey = []byte("totaly-secret-jwt-key")
-
 type Credentials struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
-}
-
-type Claims struct {
-	Username string `json:"username"`
-	jwt.StandardClaims
-}
-
-func HashPassword(password string) []byte {
-	bKey := argon2.Key(
-		[]byte(password),
-		[]byte("secret"),
-		3, 32*1024, 4, 32)
-	return bKey
-}
-
-func CheckPasswordHash(password string, hash []byte) bool {
-	return bytes.Equal(
-		hash,
-		HashPassword(password),
-	)
-}
-
-func CheckClaims(w http.ResponseWriter, r *http.Request) (claims Claims, err error) {
-
-	c, err := r.Cookie("token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	tknStr := c.Value
-
-	tkn, err := jwt.ParseWithClaims(tknStr, &claims, func(token *jwt.Token) (interface{}, error) {
-		return jwtKey, nil
-	})
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if !tkn.Valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	return
 }
 
 func Signup(queries *DB.Queries) httprouter.Handle {
@@ -90,7 +32,15 @@ func Signup(queries *DB.Queries) httprouter.Handle {
 			r.Context(),
 			DB.CreateUserParams{
 				Username: sql.NullString{String: creds.Username, Valid: true},
-				Password: HashPassword(creds.Password),
+				Password: auth.HashPassword(creds.Password),
+				CreatedAt: sql.NullTime{
+					Time:  time.Now(),
+					Valid: true,
+				},
+				UpdatedAt: sql.NullTime{
+					Time:  time.Now(),
+					Valid: true,
+				},
 			})
 		if err != nil {
 			print(err.Error())
@@ -100,7 +50,7 @@ func Signup(queries *DB.Queries) httprouter.Handle {
 
 		expirationTime := time.Now().Add(5 * time.Minute)
 
-		claims := &Claims{
+		claims := &jwtauth.Claims{
 			Username: creds.Username,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
@@ -108,7 +58,7 @@ func Signup(queries *DB.Queries) httprouter.Handle {
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenString, err := token.SignedString(jwtKey)
+		tokenString, err := token.SignedString(jwtauth.JwtKey)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -143,13 +93,13 @@ func Signin(queries *DB.Queries) httprouter.Handle {
 
 		}
 
-		if !CheckPasswordHash(creds.Password, user.Password) {
+		if !auth.CheckPasswordHash(creds.Password, user.Password) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		expirationTime := time.Now().Add(5 * time.Minute)
 
-		claims := &Claims{
+		claims := &jwtauth.Claims{
 			Username: creds.Username,
 			StandardClaims: jwt.StandardClaims{
 				ExpiresAt: expirationTime.Unix(),
@@ -157,7 +107,7 @@ func Signin(queries *DB.Queries) httprouter.Handle {
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenString, err := token.SignedString(jwtKey)
+		tokenString, err := token.SignedString(jwtauth.JwtKey)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -172,7 +122,7 @@ func Signin(queries *DB.Queries) httprouter.Handle {
 }
 
 func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	claims, err := CheckClaims(w, r)
+	claims, err := jwtauth.CheckClaims(w, r)
 	if err != nil {
 		log.Print(err.Error())
 		return
@@ -181,12 +131,12 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func Refresh(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	claims, err := CheckClaims(w, r)
+	claims, err := jwtauth.CheckClaims(w, r)
 
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims.ExpiresAt = expirationTime.Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(jwtauth.JwtKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

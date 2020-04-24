@@ -15,10 +15,12 @@ SELECT username
 FROM users;
 
 -- name: CreateUser :one
-INSERT INTO users (username,
-                   password)
-VALUES ($1,
-        $2
+INSERT INTO users (username, password, created_at, updated_at)
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4
         )
 RETURNING *;
 
@@ -26,3 +28,16 @@ RETURNING *;
 DELETE
 FROM users
 WHERE id = $1;
+
+--name: CreateTask :one
+INSERT INTO tasks (
+                   id, title, comment, created_at, updated_at
+)
+VALUES(
+       $1,$2,$3,$4,$5
+      )
+RETURNING *;
+
+-- name: ListTasks :many
+SELECT * FROM tasks;
+

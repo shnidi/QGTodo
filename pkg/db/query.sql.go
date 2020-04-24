@@ -9,21 +9,30 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (username,
-                   password)
-VALUES ($1,
-        $2
+INSERT INTO users (username, password, created_at, updated_at)
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4
         )
 RETURNING id, username, password, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
-	Username sql.NullString
-	Password []byte
+	Username  sql.NullString
+	Password  []byte
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, createUser, arg.Username, arg.Password)
+	row := q.db.QueryRowContext(ctx, createUser,
+		arg.Username,
+		arg.Password,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -87,6 +96,41 @@ func (q *Queries) GetUserByName(ctx context.Context, username sql.NullString) (U
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const listTasks = `-- name: ListTasks :many
+SELECT id, title, comment, done, created_at, updated_at, deleted_at FROM tasks
+`
+
+func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, listTasks)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Comment,
+			&i.Done,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUsers = `-- name: ListUsers :many
