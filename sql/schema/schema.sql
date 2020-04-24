@@ -11,6 +11,7 @@ CREATE TABLE users
 CREATE TABLE tasks
 (
     id   SERIAL PRIMARY KEY,
+    fk_user  SERIAL REFERENCES users(id) ON DELETE RESTRICT,
     title varchar(255),
     comment varchar(255),
     done bool,

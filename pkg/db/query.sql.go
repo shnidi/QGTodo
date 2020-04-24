@@ -45,6 +45,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteTask = `-- name: DeleteTask :exec
+DELETE
+FROM tasks
+WHERE id = $1
+`
+
+func (q *Queries) DeleteTask(ctx context.Context, id int32) error {
+	_, err := q.db.ExecContext(ctx, deleteTask, id)
+	return err
+}
+
 const deleteUser = `-- name: DeleteUser :exec
 DELETE
 FROM users
@@ -98,12 +109,12 @@ func (q *Queries) GetUserByName(ctx context.Context, username sql.NullString) (U
 	return i, err
 }
 
-const listTasks = `-- name: ListTasks :many
-SELECT id, title, comment, done, created_at, updated_at, deleted_at FROM tasks
+const listTasksFromUser = `-- name: ListTasksFromUser :many
+SELECT id, fk_user, title, comment, done, created_at, updated_at, deleted_at FROM tasks WHERE fk_user=$1
 `
 
-func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, listTasks)
+func (q *Queries) ListTasksFromUser(ctx context.Context, fkUser sql.NullInt32) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, listTasksFromUser, fkUser)
 	if err != nil {
 		return nil, err
 	}
@@ -113,6 +124,7 @@ func (q *Queries) ListTasks(ctx context.Context) ([]Task, error) {
 		var i Task
 		if err := rows.Scan(
 			&i.ID,
+			&i.FkUser,
 			&i.Title,
 			&i.Comment,
 			&i.Done,
@@ -159,4 +171,109 @@ func (q *Queries) ListUsers(ctx context.Context) ([]sql.NullString, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const paranoidDeleteTask = `-- name: ParanoidDeleteTask :exec
+UPDATE users SET deleted_at=$1
+`
+
+func (q *Queries) ParanoidDeleteTask(ctx context.Context, deletedAt sql.NullTime) error {
+	_, err := q.db.ExecContext(ctx, paranoidDeleteTask, deletedAt)
+	return err
+}
+
+const paranoidDeleteUser = `-- name: ParanoidDeleteUser :exec
+UPDATE users
+SET deleted_at=$1
+`
+
+func (q *Queries) ParanoidDeleteUser(ctx context.Context, deletedAt sql.NullTime) error {
+	_, err := q.db.ExecContext(ctx, paranoidDeleteUser, deletedAt)
+	return err
+}
+
+const paranoidListTasksFromUser = `-- name: ParanoidListTasksFromUser :many
+SELECT id, fk_user, title, comment, done, created_at, updated_at, deleted_at FROM tasks
+WHERE deleted_at IS NULL AND fk_user=$1
+`
+
+func (q *Queries) ParanoidListTasksFromUser(ctx context.Context, fkUser sql.NullInt32) ([]Task, error) {
+	rows, err := q.db.QueryContext(ctx, paranoidListTasksFromUser, fkUser)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Task
+	for rows.Next() {
+		var i Task
+		if err := rows.Scan(
+			&i.ID,
+			&i.FkUser,
+			&i.Title,
+			&i.Comment,
+			&i.Done,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const paranoidListUsers = `-- name: ParanoidListUsers :many
+SELECT username
+FROM users
+WHERE deleted_at IS NULL
+`
+
+func (q *Queries) ParanoidListUsers(ctx context.Context) ([]sql.NullString, error) {
+	rows, err := q.db.QueryContext(ctx, paranoidListUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []sql.NullString
+	for rows.Next() {
+		var username sql.NullString
+		if err := rows.Scan(&username); err != nil {
+			return nil, err
+		}
+		items = append(items, username)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateTaskTitle = `-- name: UpdateTaskTitle :exec
+UPDATE tasks
+SET title=$1
+`
+
+func (q *Queries) UpdateTaskTitle(ctx context.Context, title sql.NullString) error {
+	_, err := q.db.ExecContext(ctx, updateTaskTitle, title)
+	return err
+}
+
+const updateUserPassword = `-- name: UpdateUserPassword :exec
+UPDATE users
+SET password=$1
+`
+
+func (q *Queries) UpdateUserPassword(ctx context.Context, password []byte) error {
+	_, err := q.db.ExecContext(ctx, updateUserPassword, password)
+	return err
 }

@@ -8,6 +8,7 @@ import (
 
 type Task struct {
 	ID        int32
+	FkUser    sql.NullInt32
 	Title     sql.NullString
 	Comment   sql.NullString
 	Done      sql.NullBool

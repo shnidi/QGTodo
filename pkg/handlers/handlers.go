@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"QGTodo/pkg/db"
@@ -129,7 +129,39 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 	w.Write([]byte(fmt.Sprintf("Welcome %s!", claims.Username)))
 }
+func GetTasksFromUser(queries *DB.Queries) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
+		claims, err := jwtauth.CheckClaims(w, r)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		ctx := r.Context()
+		user, err := queries.GetUserByName(ctx, sql.NullString{
+			String: claims.Username,
+			Valid:  false,
+		})
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		tasks, err := queries.ParanoidListTasksFromUser(ctx, sql.NullInt32{
+			Int32: user.ID,
+			Valid: false,
+		})
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		jsonTasks, err := json.Marshal(tasks)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		w.Write(jsonTasks)
+	}
+}
 func Refresh(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := jwtauth.CheckClaims(w, r)
 
