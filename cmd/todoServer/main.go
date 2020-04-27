@@ -40,23 +40,23 @@ func main() {
 
 	var dbConfig DBConfig
 
-	dbConfig.host, err = goEnv.StrictGetEnv("QGTODO_HOST")
+	dbConfig.host, err = goEnv.StrictGetEnv("QGTODO_PG_HOST")
 	if err != nil {
 		log.Fatal(err)
 	}
-	dbConfig.port, err = goEnv.StrictGetEnvToI("QGTODO_PORT")
+	dbConfig.port, err = goEnv.StrictGetEnvToI("QGTODO_PG_PORT")
 	if err != nil {
 		log.Fatal(err)
 	}
-	dbConfig.user, err = goEnv.StrictGetEnv("QGTODO_USER")
+	dbConfig.user, err = goEnv.StrictGetEnv("QGTODO_PG_USER")
 	if err != nil {
 		log.Fatal(err)
 	}
-	dbConfig.password, err = goEnv.StrictGetEnv("QGTODO_PW")
+	dbConfig.password, err = goEnv.StrictGetEnv("QGTODO_PG_PW")
 	if err != nil {
 		log.Fatal(err)
 	}
-	dbConfig.database, err = goEnv.StrictGetEnv("QGTODO_DB")
+	dbConfig.database, err = goEnv.StrictGetEnv("QGTODO_PG_DB")
 	if err != nil {
 		log.Fatal(err)
 	}

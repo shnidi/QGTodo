@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: godev
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: qgtodo
+      # ... other environment variables
+    ports:
+      - "5234:5234"
+    volumes:
+      - ./../../assets/sqlc/schema.sql:/docker-entrypoint-initdb.d/init.sql
+  todoServer:
+    image: golang:14.2
+    environment:
+      QGTODO_PG_HOST: localhost
+      QGTODO_PG_USER: godev
+      QGTODO_PG_PW: password
+      QGTODO_PG_PORT: 5432
+      QGTODO_PG_DB: qgtodo
+      # ... other environment variables
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./.sh:/usr/local/bin/apache2-custom.sh"
