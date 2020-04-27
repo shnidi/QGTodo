@@ -97,7 +97,7 @@ func Signin(queries *DB.Queries) httprouter.Handle {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		expirationTime := time.Now().Add(5 * time.Minute)
+		expirationTime := time.Now().Add(48 * time.Hour)
 
 		claims := &jwtauth.Claims{
 			Username: creds.Username,
@@ -127,7 +127,11 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		log.Print(err.Error())
 		return
 	}
-	w.Write([]byte(fmt.Sprintf("Welcome %s!", claims.Username)))
+	_, err = w.Write([]byte(fmt.Sprintf("Welcome %s!", claims.Username)))
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
 }
 func GetTasksFromUser(queries *DB.Queries) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -146,10 +150,7 @@ func GetTasksFromUser(queries *DB.Queries) httprouter.Handle {
 			log.Print(err.Error())
 			return
 		}
-		tasks, err := queries.ParanoidListTasksFromUser(ctx, sql.NullInt32{
-			Int32: user.ID,
-			Valid: false,
-		})
+		tasks, err := queries.ParanoidListTasksFromUser(ctx, user.ID)
 		if err != nil {
 			log.Print(err.Error())
 			return
@@ -159,7 +160,11 @@ func GetTasksFromUser(queries *DB.Queries) httprouter.Handle {
 			log.Print(err.Error())
 			return
 		}
-		w.Write(jsonTasks)
+		_, err = w.Write(jsonTasks)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
 	}
 }
 func AddTasksToUser(queries *DB.Queries) httprouter.Handle {
@@ -169,31 +174,32 @@ func AddTasksToUser(queries *DB.Queries) httprouter.Handle {
 		task := DB.Task{}
 		decoder := json.NewDecoder(r.Body)
 		err = decoder.Decode(&task)
-		if err != nil {
-			panic(err)
-		}
 
 		if err != nil {
 			log.Print(err.Error())
 			return
 		}
 		ctx := r.Context()
+
+		print(claims.Username, "\n")
 		user, err := queries.GetUserByName(ctx, sql.NullString{
 			String: claims.Username,
-			Valid:  false,
+			Valid:  true,
 		})
 		if err != nil {
 			log.Print(err.Error())
 			return
 		}
-
-		task.FkUser = user.ID
 		tasks, err := queries.CreateTask(ctx, DB.CreateTaskParams{
+			FkUser: user.ID,
 			Title: sql.NullString{
 				String: task.Title.String,
 				Valid:  true,
 			},
-			Comment: sql.NullString{},
+			Comment: sql.NullString{
+				String: task.Comment.String,
+				Valid:  true,
+			},
 			CreatedAt: sql.NullTime{
 				Time:  time.Now(),
 				Valid: true,
@@ -212,12 +218,19 @@ func AddTasksToUser(queries *DB.Queries) httprouter.Handle {
 			log.Print(err.Error())
 			return
 		}
-		w.Write(jsonTasks)
+		_, err = w.Write(jsonTasks)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
 	}
 }
 func Refresh(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := jwtauth.CheckClaims(w, r)
-
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims.ExpiresAt = expirationTime.Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

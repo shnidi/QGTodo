@@ -1,6 +1,7 @@
 package jwtauth
 
 import (
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"time"
@@ -42,8 +43,9 @@ func CheckClaims(w http.ResponseWriter, r *http.Request) (claims Claims, err err
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
-	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
-		w.WriteHeader(http.StatusBadRequest)
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) < 30*time.Second {
+		w.WriteHeader(http.StatusGatewayTimeout)
+		err = fmt.Errorf("Expired")
 		return
 	}
 	return

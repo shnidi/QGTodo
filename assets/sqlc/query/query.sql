@@ -38,7 +38,7 @@ UPDATE users
 SET deleted_at=$1;
 
 -- name: CreateTask :one
-INSERT INTO tasks (id, title, comment, created_at, updated_at)
+INSERT INTO tasks ( fk_user,title, comment, created_at, updated_at)
 VALUES ($1,$2,$3,$4,$5)
 RETURNING *;
 

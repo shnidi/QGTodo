@@ -9,13 +9,13 @@ import (
 )
 
 const createTask = `-- name: CreateTask :one
-INSERT INTO tasks (id, title, comment, created_at, updated_at)
+INSERT INTO tasks ( fk_user,title, comment, created_at, updated_at)
 VALUES ($1,$2,$3,$4,$5)
 RETURNING id, fk_user, title, comment, done, created_at, updated_at, deleted_at
 `
 
 type CreateTaskParams struct {
-	ID        int32
+	FkUser    int32
 	Title     sql.NullString
 	Comment   sql.NullString
 	CreatedAt sql.NullTime
@@ -24,7 +24,7 @@ type CreateTaskParams struct {
 
 func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
 	row := q.db.QueryRowContext(ctx, createTask,
-		arg.ID,
+		arg.FkUser,
 		arg.Title,
 		arg.Comment,
 		arg.CreatedAt,

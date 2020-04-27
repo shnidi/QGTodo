@@ -3,6 +3,7 @@ package main
 import (
 	DB "QGTodo/pkg/db"
 	"QGTodo/pkg/handlers"
+	"QGTodo/pkg/util/goEnv"
 	"database/sql"
 	"fmt"
 	"github.com/joho/godotenv"
@@ -11,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 )
 
 type DBConfig struct {
@@ -22,13 +22,6 @@ type DBConfig struct {
 	database string
 }
 
-func portAtoi(port string) int {
-	i, err := strconv.Atoi(port)
-	if err != nil {
-		log.Fatal("Error converting Port")
-	}
-	return i
-}
 func sprintfDBConfig(config DBConfig) string {
 	return fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
@@ -37,15 +30,37 @@ func sprintfDBConfig(config DBConfig) string {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		if os.IsNotExist(err) {
+			log.Print(err)
+
+		} else {
+			log.Fatal(err.Error())
+		}
 	}
-	dbConfig := DBConfig{
-		host:     os.Getenv("QGTODO_HOST"),
-		port:     portAtoi(os.Getenv("QGTODO_PORT")),
-		user:     os.Getenv("QGTODO_USER"),
-		password: os.Getenv("QGTODO_PW"),
-		database: os.Getenv("QGTODO_DB"),
+
+	var dbConfig DBConfig
+
+	dbConfig.host, err = goEnv.StrictGetEnv("QGTODO_HOST")
+	if err != nil {
+		log.Fatal(err)
 	}
+	dbConfig.port, err = goEnv.StrictGetEnvToI("QGTODO_PORT")
+	if err != nil {
+		log.Fatal(err)
+	}
+	dbConfig.user, err = goEnv.StrictGetEnv("QGTODO_USER")
+	if err != nil {
+		log.Fatal(err)
+	}
+	dbConfig.password, err = goEnv.StrictGetEnv("QGTODO_PW")
+	if err != nil {
+		log.Fatal(err)
+	}
+	dbConfig.database, err = goEnv.StrictGetEnv("QGTODO_DB")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Println("Launching server...")
 
 	db, err := sql.Open("postgres", sprintfDBConfig(dbConfig))
@@ -54,11 +69,18 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	router := httprouter.New()
 	router.POST("/signin", handlers.Signin(queries))
 	router.POST("/signup", handlers.Signup(queries))
+	router.POST("/task", handlers.AddTasksToUser(queries))
 	router.GET("/welcome", handlers.Welcome)
 	router.GET("/refresh", handlers.Refresh)
 	/*	router.POST("/task", CreateTask)

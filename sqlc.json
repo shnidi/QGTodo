@@ -1,9 +1,0 @@
-{
-  "version": "1",
-  "packages": [{
-    "schema": "./sql/schema/",
-    "queries": "./sql/query/",
-    "name": "DB",
-    "path": "./pkg/db"
-  }]
-}
