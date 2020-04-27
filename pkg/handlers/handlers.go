@@ -162,6 +162,59 @@ func GetTasksFromUser(queries *DB.Queries) httprouter.Handle {
 		w.Write(jsonTasks)
 	}
 }
+func AddTasksToUser(queries *DB.Queries) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+		claims, err := jwtauth.CheckClaims(w, r)
+		task := DB.Task{}
+		decoder := json.NewDecoder(r.Body)
+		err = decoder.Decode(&task)
+		if err != nil {
+			panic(err)
+		}
+
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		ctx := r.Context()
+		user, err := queries.GetUserByName(ctx, sql.NullString{
+			String: claims.Username,
+			Valid:  false,
+		})
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+
+		task.FkUser = user.ID
+		tasks, err := queries.CreateTask(ctx, DB.CreateTaskParams{
+			Title: sql.NullString{
+				String: task.Title.String,
+				Valid:  true,
+			},
+			Comment: sql.NullString{},
+			CreatedAt: sql.NullTime{
+				Time:  time.Now(),
+				Valid: true,
+			},
+			UpdatedAt: sql.NullTime{
+				Time:  time.Now(),
+				Valid: true,
+			},
+		})
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		jsonTasks, err := json.Marshal(tasks)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		w.Write(jsonTasks)
+	}
+}
 func Refresh(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	claims, err := jwtauth.CheckClaims(w, r)
 

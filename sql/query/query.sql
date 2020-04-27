@@ -21,12 +21,7 @@ WHERE deleted_at IS NULL;
 
 -- name: CreateUser :one
 INSERT INTO users (username, password, created_at, updated_at)
-VALUES (
-        $1,
-        $2,
-        $3,
-        $4
-        )
+VALUES ( $1, $2, $3, $4)
 RETURNING *;
 
 -- name: UpdateUserPassword :exec
@@ -42,13 +37,9 @@ WHERE id = $1;
 UPDATE users
 SET deleted_at=$1;
 
---name: CreateTask :one
-INSERT INTO tasks (
-                   id, title, comment, created_at, updated_at
-)
-VALUES(
-       $1,$2,$3,$4,$5
-      )
+-- name: CreateTask :one
+INSERT INTO tasks (id, title, comment, created_at, updated_at)
+VALUES ($1,$2,$3,$4,$5)
 RETURNING *;
 
 -- name: UpdateTaskTitle :exec
@@ -60,7 +51,8 @@ SELECT * FROM tasks WHERE fk_user=$1;
 
 -- name: ParanoidListTasksFromUser :many
 SELECT * FROM tasks
-WHERE deleted_at IS NULL AND fk_user=$1;;
+WHERE deleted_at
+IS NULL AND fk_user=$1;
 
 -- name: DeleteTask :exec
 DELETE

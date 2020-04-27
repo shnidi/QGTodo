@@ -8,14 +8,45 @@ import (
 	"database/sql"
 )
 
+const createTask = `-- name: CreateTask :one
+INSERT INTO tasks (id, title, comment, created_at, updated_at)
+VALUES ($1,$2,$3,$4,$5)
+RETURNING id, fk_user, title, comment, done, created_at, updated_at, deleted_at
+`
+
+type CreateTaskParams struct {
+	ID        int32
+	Title     sql.NullString
+	Comment   sql.NullString
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+}
+
+func (q *Queries) CreateTask(ctx context.Context, arg CreateTaskParams) (Task, error) {
+	row := q.db.QueryRowContext(ctx, createTask,
+		arg.ID,
+		arg.Title,
+		arg.Comment,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.FkUser,
+		&i.Title,
+		&i.Comment,
+		&i.Done,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (username, password, created_at, updated_at)
-VALUES (
-        $1,
-        $2,
-        $3,
-        $4
-        )
+VALUES ( $1, $2, $3, $4)
 RETURNING id, username, password, created_at, updated_at, deleted_at
 `
 
@@ -194,7 +225,8 @@ func (q *Queries) ParanoidDeleteUser(ctx context.Context, deletedAt sql.NullTime
 
 const paranoidListTasksFromUser = `-- name: ParanoidListTasksFromUser :many
 SELECT id, fk_user, title, comment, done, created_at, updated_at, deleted_at FROM tasks
-WHERE deleted_at IS NULL AND fk_user=$1
+WHERE deleted_at
+IS NULL AND fk_user=$1
 `
 
 func (q *Queries) ParanoidListTasksFromUser(ctx context.Context, fkUser sql.NullInt32) ([]Task, error) {

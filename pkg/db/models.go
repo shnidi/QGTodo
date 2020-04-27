@@ -3,12 +3,12 @@
 package DB
 
 import (
-	"database/sql"
+	sql "QGTodo/pkg/util/JSONunMarshal"
 )
 
 type Task struct {
 	ID        int32
-	FkUser    sql.NullInt32
+	FkUser    sql.JsonNullInt32
 	Title     sql.NullString
 	Comment   sql.NullString
 	Done      sql.NullBool
