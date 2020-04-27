@@ -8,7 +8,7 @@ import (
 
 type Task struct {
 	ID        int32
-	FkUser    sql.JsonNullInt32
+	FkUser    int32
 	Title     sql.NullString
 	Comment   sql.NullString
 	Done      sql.NullBool

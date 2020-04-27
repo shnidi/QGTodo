@@ -144,7 +144,7 @@ const listTasksFromUser = `-- name: ListTasksFromUser :many
 SELECT id, fk_user, title, comment, done, created_at, updated_at, deleted_at FROM tasks WHERE fk_user=$1
 `
 
-func (q *Queries) ListTasksFromUser(ctx context.Context, fkUser sql.NullInt32) ([]Task, error) {
+func (q *Queries) ListTasksFromUser(ctx context.Context, fkUser int32) ([]Task, error) {
 	rows, err := q.db.QueryContext(ctx, listTasksFromUser, fkUser)
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ WHERE deleted_at
 IS NULL AND fk_user=$1
 `
 
-func (q *Queries) ParanoidListTasksFromUser(ctx context.Context, fkUser sql.NullInt32) ([]Task, error) {
+func (q *Queries) ParanoidListTasksFromUser(ctx context.Context, fkUser int32) ([]Task, error) {
 	rows, err := q.db.QueryContext(ctx, paranoidListTasksFromUser, fkUser)
 	if err != nil {
 		return nil, err
