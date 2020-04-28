@@ -24,6 +24,7 @@ func Signup(queries *DB.Queries) httprouter.Handle {
 		var creds Credentials
 		err := json.NewDecoder(r.Body).Decode(&creds)
 		if err != nil {
+			print(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
