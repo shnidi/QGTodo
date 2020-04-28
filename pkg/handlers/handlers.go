@@ -45,7 +45,7 @@ func Signup(queries *DB.Queries) httprouter.Handle {
 			})
 		if err != nil {
 			print(err.Error())
-			w.WriteHeader(http.StatusForbidden)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
