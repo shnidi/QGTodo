@@ -60,6 +60,7 @@ func Signup(queries *DB.Queries) httprouter.Handle {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 		tokenString, err := token.SignedString(jwtauth.JwtKey)
 		if err != nil {
+			print(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
