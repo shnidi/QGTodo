@@ -62,7 +62,6 @@ func main() {
 	}
 
 	fmt.Println("Launching server...")
-	fmt.Println(sprintfDBConfig(dbConfig))
 	db, err := sql.Open("postgres", sprintfDBConfig(dbConfig))
 	queries := DB.New(db)
 	//queries = Queries{*queries}

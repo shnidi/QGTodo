@@ -1,4 +1,10 @@
 # QGTodo
 A simple Todo REST API
 
-## Requirements
+# Docker
+```bash
+docker-compose up
+```
+
+
+

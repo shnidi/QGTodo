@@ -7,20 +7,20 @@ services:
       POSTGRES_USER: godev
       POSTGRES_PASSWORD: password
       POSTGRES_DB: qgtodo
-      # ... other environment variables
     ports:
       - "5432:5432"
     volumes:
       - ./assets/sqlc/schema/schema.sql:/docker-entrypoint-initdb.d/schema.sql
   todoserver:
+    links:
+      - db
     build: .
     environment:
-      QGTODO_PG_HOST: localhost
+      QGTODO_PG_HOST: db
       QGTODO_PG_USER: godev
       QGTODO_PG_PW: password
       QGTODO_PG_PORT: 5432
       QGTODO_PG_DB: qgtodo
-      # ... other environment variables
     depends_on:
       - db
     ports:
