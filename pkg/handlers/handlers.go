@@ -133,6 +133,38 @@ func Welcome(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 }
+func RemoveTaskFromUser(queries *DB.Queries) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		claims, err := jwtauth.CheckClaims(w, r)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		ctx := r.Context()
+		user, err := queries.GetUserByName(ctx, sql.NullString{
+			String: claims.Username,
+			Valid:  false,
+		})
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		err = queries.ParanoidDeleteTask(ctx, user.ID)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		if err != nil {
+			log.Print(err.Error())
+			return
+		}
+	}
+}
 func GetTasksFromUser(queries *DB.Queries) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 

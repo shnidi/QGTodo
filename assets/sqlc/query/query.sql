@@ -57,7 +57,7 @@ IS NULL AND fk_user=$1;
 -- name: DeleteTask :exec
 DELETE
 FROM tasks
-WHERE id = $1;
+WHERE fk_user = $1;
 
 -- name: ParanoidDeleteTask :exec
-UPDATE users SET deleted_at=$1;
+UPDATE tasks SET deleted_at=now() WHERE fk_user=$1;

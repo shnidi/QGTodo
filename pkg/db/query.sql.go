@@ -79,11 +79,11 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 const deleteTask = `-- name: DeleteTask :exec
 DELETE
 FROM tasks
-WHERE id = $1
+WHERE fk_user = $1
 `
 
-func (q *Queries) DeleteTask(ctx context.Context, id int32) error {
-	_, err := q.db.ExecContext(ctx, deleteTask, id)
+func (q *Queries) DeleteTask(ctx context.Context, fkUser int32) error {
+	_, err := q.db.ExecContext(ctx, deleteTask, fkUser)
 	return err
 }
 
@@ -205,11 +205,11 @@ func (q *Queries) ListUsers(ctx context.Context) ([]sql.NullString, error) {
 }
 
 const paranoidDeleteTask = `-- name: ParanoidDeleteTask :exec
-UPDATE users SET deleted_at=$1
+UPDATE tasks SET deleted_at=now() WHERE fk_user=$1
 `
 
-func (q *Queries) ParanoidDeleteTask(ctx context.Context, deletedAt sql.NullTime) error {
-	_, err := q.db.ExecContext(ctx, paranoidDeleteTask, deletedAt)
+func (q *Queries) ParanoidDeleteTask(ctx context.Context, fkUser int32) error {
+	_, err := q.db.ExecContext(ctx, paranoidDeleteTask, fkUser)
 	return err
 }
 
