@@ -1,14 +1,14 @@
 package handlers
 
 import (
-	"QGTodo/pkg/db"
-	"QGTodo/pkg/util/auth"
-	"QGTodo/pkg/util/jwtauth"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
+	"github.com/saegewerk/QGTodo/pkg/db"
+	"github.com/saegewerk/QGTodo/pkg/util/auth"
+	"github.com/saegewerk/QGTodo/pkg/util/jwtauth"
 	"log"
 	"net/http"
 	"time"

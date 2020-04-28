@@ -1,4 +1,4 @@
-module QGTodo
+module github.com/saegewerk/QGTodo
 
 go 1.14
 

@@ -3,7 +3,7 @@
 package DB
 
 import (
-	sql "QGTodo/pkg/util/JSONunMarshal"
+	sql "github.com/saegewerk/QGTodo/pkg/util/JSONunMarshal"
 )
 
 type Task struct {

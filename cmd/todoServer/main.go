@@ -1,14 +1,14 @@
 package main
 
 import (
-	DB "QGTodo/pkg/db"
-	"QGTodo/pkg/handlers"
-	"QGTodo/pkg/util/goEnv"
 	"database/sql"
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/lib/pq"
+	DB "github.com/saegewerk/QGTodo/pkg/db"
+	"github.com/saegewerk/QGTodo/pkg/handlers"
+	"github.com/saegewerk/QGTodo/pkg/util/goEnv"
 	"log"
 	"net/http"
 	"os"
