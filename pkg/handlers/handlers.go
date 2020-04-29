@@ -198,7 +198,7 @@ func GetTasksFromUser(queries *DB.Queries) httprouter.Handle {
 		}
 	}
 }
-func AddTasksToUser(queries *DB.Queries) httprouter.Handle {
+func AddTaskToUser(queries *DB.Queries) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 		claims, err := jwtauth.CheckClaims(w, r)

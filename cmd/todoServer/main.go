@@ -79,11 +79,8 @@ func main() {
 	router := httprouter.New()
 	router.POST("/signin", handlers.Signin(queries))
 	router.POST("/signup", handlers.Signup(queries))
-	router.POST("/task", handlers.AddTasksToUser(queries))
+	router.POST("/task", handlers.AddTaskToUser(queries))
 	router.GET("/welcome", handlers.Welcome)
 	router.GET("/refresh", handlers.Refresh)
-	/*	router.POST("/task", CreateTask)
-		router.GET("/task", GetTasks)
-		router.GET("/task/:task", GetTask)*/
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
