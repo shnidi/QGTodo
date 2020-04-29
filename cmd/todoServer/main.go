@@ -63,11 +63,11 @@ func main() {
 
 	fmt.Println("Launching server...")
 	db, err := sql.Open("postgres", sprintfDBConfig(dbConfig))
-	queries := DB.New(db)
-	//queries = Queries{*queries}
 	if err != nil {
 		panic(err)
 	}
+
+	queries := DB.New(db)
 
 	defer func() {
 		err = db.Close()
